@@ -1,0 +1,31 @@
+version: '3'
+
+output: prefixed
+
+vars:
+  APPLICATION: e2e-envtest
+
+tasks:
+  e2e:setup:
+    desc: Download envtest binaries
+    cmds:
+      - ./scripts/download-envtest.sh
+
+  build:
+    desc: Build main application
+    cmds:
+      - mkdir -p ./bin
+      - go build --ldflags '-extldflags -static' -o ./bin/{{.APPLICATION}} ./cmd/{{.APPLICATION}}
+
+  e2e:
+    desc: Run e2e test
+    deps:
+      - build
+      - e2e:setup
+    cmds:
+      - go test -tags="e2e" -v ./e2e/...
+    env:
+      KUBEBUILDER_ASSETS:
+        sh: echo $(pwd)/bin/envtest
+      E2E_KUBECONFIG:
+        sh: echo $(pwd)/bin/kubeconfig
