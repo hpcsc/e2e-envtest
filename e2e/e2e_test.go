@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/require"
@@ -55,13 +56,21 @@ func TestE2E(t *testing.T) {
 		createTestNamespace(t, "ns-1")
 		createTestNamespace(t, "ns-2")
 
+		var stdout, stderr bytes.Buffer
 		cmd := exec.Command("../bin/e2e-envtest", "-created-by", "e2e")
-		out, err := cmd.CombinedOutput()
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
 
-		fmt.Printf("=============== Program output ==============\n%s\n====================================\n", string(out))
-		require.NoError(t, err)
+		// start command
+		require.NoError(t, cmd.Start())
+		// optionally do other stuffs while command's executed in the background
+		// wait for command to finish
+		require.NoError(t, cmd.Wait())
 
-		require.Contains(t, string(out), "found 2 namespaces: ns-1, ns-2")
+		fmt.Printf("====================================\n- Output:\n%s\n- Error:\n%s\n====================================\n",
+			stdout.String(), stderr.String())
+
+		require.Contains(t, stdout.String(), "found 2 namespaces: ns-1, ns-2")
 	})
 }
 
